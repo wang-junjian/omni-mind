@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
+import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import { db } from '../../../../lib/db/client';
 import { files } from '../../../../lib/db/schema';
@@ -19,10 +20,12 @@ export async function GET(
       id: params.id,
       url: request.url,
       userAgent: request.headers.get('user-agent'),
+      range: request.headers.get('range'),
     });
 
     const { searchParams } = new URL(request.url);
     const debugPath = searchParams.get('path');
+    const isDownload = searchParams.get('download') === '1';
 
     let filePath: string;
     let filename: string;
@@ -84,9 +87,10 @@ export async function GET(
     await logger.debug('PREVIEW', `[${requestId}] Normalized file path`, { originalPath: fileRecord?.filePath || debugPath, normalizedPath: filePath });
 
     // 检查文件是否存在且可读
+    let stats: fs.Stats;
     try {
-      await fs.access(filePath, fs.constants.R_OK);
-      const stats = await fs.stat(filePath);
+      await fsPromises.access(filePath, fs.constants.R_OK);
+      stats = await fsPromises.stat(filePath);
 
       if (!stats.isFile()) {
         throw new Error('Path is not a regular file');
@@ -114,47 +118,68 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // 读取文件内容
-    let fileBuffer: Buffer;
-    try {
-      fileBuffer = await fs.readFile(filePath);
-      await logger.debug('PREVIEW', `[${requestId}] File read successfully`, {
-        size: fileBuffer.length,
-        bytesRead: fileBuffer.length,
-      });
-    } catch (readErr) {
-      const error = readErr as Error;
-      await logger.error('PREVIEW', `[${requestId}] Failed to read file`, {
-        filePath,
-        error: error.message,
-        code: (error as any).code,
+    const range = request.headers.get('range');
+    const fileSize = stats.size;
+
+    // 处理 Range 请求（用于音频/视频流式播放）
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+
+      await logger.info('PREVIEW', `[${requestId}] Serving range request`, {
+        start,
+        end,
+        chunksize,
+        fileSize,
       });
 
-      return NextResponse.json({
-        error: 'Failed to read file',
-        requestId,
-        path: filePath,
-        errorCode: (error as any).code,
-        errorDetail: error.message,
-      }, { status: 500 });
+      const stream = fs.createReadStream(filePath, { start, end });
+
+      const headers = new Headers();
+      headers.set('Content-Type', mimeType);
+      headers.set('Content-Length', chunksize.toString());
+      headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+      headers.set('Accept-Ranges', 'bytes');
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+      if (isDownload) {
+        headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      }
+
+      return new NextResponse(stream as any, {
+        status: 206,
+        headers,
+      });
+    }
+
+    // 完整文件请求
+    await logger.debug('PREVIEW', `[${requestId}] Serving full file`, { fileSize });
+
+    const stream = fs.createReadStream(filePath);
+
+    const headers = new Headers();
+    headers.set('Content-Type', mimeType);
+    headers.set('Content-Length', fileSize.toString());
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    if (isDownload) {
+      headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     }
 
     const duration = Date.now() - startTime;
     await logger.info('PREVIEW', `[${requestId}] Sending file response`, {
       filename,
       mimeType,
-      size: fileBuffer.length,
+      size: fileSize,
       durationMs: duration,
     });
 
-    // 返回文件 - 简化响应头，确保兼容性
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(stream as any, {
       status: 200,
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Length': fileBuffer.length.toString(),
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
+      headers,
     });
   } catch (globalError) {
     const error = globalError as Error;
