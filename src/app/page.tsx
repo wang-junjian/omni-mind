@@ -1,15 +1,22 @@
 import SearchBar from '@/components/SearchBar';
 import { db } from '@/lib/db/client';
 import { files } from '@/lib/db/schema';
-import { count, sql } from 'drizzle-orm';
+import { count } from 'drizzle-orm';
 
 export default async function Home() {
-  // 获取统计信息
-  const totalFiles = await db.select({ count: count() }).from(files).get();
-  const stats = await db.select({
-    fileType: files.fileType,
-    count: count(),
-  }).from(files).groupBy(files.fileType);
+  // 获取统计信息 - 添加错误处理防止数据库表不存在时崩溃
+  let totalFiles = { count: 0 };
+  let stats: Array<{ fileType: string | null; count: number }> = [];
+
+  try {
+    totalFiles = await db.select({ count: count() }).from(files).get() || { count: 0 };
+    stats = await db.select({
+      fileType: files.fileType,
+      count: count(),
+    }).from(files).groupBy(files.fileType);
+  } catch (error) {
+    console.warn('Database not initialized yet:', error);
+  }
 
   const statsMap = new Map(stats.map(s => [s.fileType, s.count]));
 
