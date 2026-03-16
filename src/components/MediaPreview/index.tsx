@@ -39,7 +39,7 @@ export default function MediaPreview({ file }: MediaPreviewProps) {
 
   if (loading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full flex-1 min-h-[400px] flex items-center justify-center">
         <div className="text-gray-500">加载中...</div>
       </div>
     );
@@ -47,35 +47,43 @@ export default function MediaPreview({ file }: MediaPreviewProps) {
 
   if (error) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full flex-1 min-h-[400px] flex items-center justify-center">
         <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
-  switch (file.fileType) {
-    case 'text':
-      return <TextPreview content={content} fileType={file.fileType} />;
-    case 'image':
-      return <ImagePreview src={previewUrl} alt={file.filename} />;
-    case 'audio':
-      return <AudioPreview src={previewUrl} title={file.filename} />;
-    case 'video':
-      return <VideoPreview src={previewUrl} title={file.filename} />;
-    case 'spreadsheet':
-      return <SpreadsheetPreview src={previewUrl} />;
-    default:
-      return (
-        <div className="w-full h-full flex flex-col items-center justify-center p-8">
-          <div className="text-gray-500 mb-4">不支持的文件格式预览</div>
-          <a
-            href={previewUrl}
-            download={file.filename}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            下载文件
-          </a>
-        </div>
-      );
+  return (
+    <div className="w-full min-h-[calc(100vh-120px)] flex flex-col items-center justify-center bg-gray-50/30">
+      {renderContent()}
+    </div>
+  );
+
+  function renderContent() {
+    switch (file.fileType) {
+      case 'text':
+        return <TextPreview content={content} fileType={file.fileType} />;
+      case 'image':
+        return <ImagePreview src={previewUrl} alt={file.filename} />;
+      case 'audio':
+        return <AudioPreview src={previewUrl} title={file.filename} />;
+      case 'video':
+        return <VideoPreview src={previewUrl} title={file.filename} />;
+      case 'spreadsheet':
+        return <SpreadsheetPreview src={previewUrl} />;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center p-8">
+            <div className="text-gray-500 mb-4">不支持的文件格式预览</div>
+            <a
+              href={previewUrl}
+              download={file.filename}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              下载文件
+            </a>
+          </div>
+        );
+    }
   }
 }

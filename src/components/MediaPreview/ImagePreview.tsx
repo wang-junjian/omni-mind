@@ -62,8 +62,8 @@ export default function ImagePreview({ src, alt }: ImagePreviewProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex justify-end gap-2 p-2 bg-gray-100 border-b">
+    <div className="w-full h-full flex flex-col min-h-0">
+      <div className="flex justify-end gap-2 p-2 bg-gray-100 border-b flex-shrink-0">
         <button
           onClick={() => setScale(Math.max(0.25, scale - 0.25))}
           className="p-2 hover:bg-gray-200 rounded"
@@ -86,7 +86,7 @@ export default function ImagePreview({ src, alt }: ImagePreviewProps) {
           <RotateCw size={20} />
         </button>
       </div>
-      <div className="flex-1 overflow-auto flex items-center justify-center bg-gray-900 p-4">
+      <div className="flex-1 overflow-auto flex items-center justify-center bg-gray-900 p-4 min-h-0">
         <img
           src={src}
           alt={alt}

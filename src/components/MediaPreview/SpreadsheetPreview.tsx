@@ -92,13 +92,13 @@ export default function SpreadsheetPreview({ src }: SpreadsheetPreviewProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex gap-2 p-2 bg-gray-100 border-b overflow-x-auto">
+    <div className="w-full h-full flex flex-col min-h-0">
+      <div className="flex gap-2 p-2 bg-gray-100 border-b overflow-x-auto flex-shrink-0">
         {sheets.map(sheet => (
           <button
             key={sheet}
             onClick={() => handleSheetChange(sheet)}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap ${
               currentSheet === sheet
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-200'
@@ -108,7 +108,7 @@ export default function SpreadsheetPreview({ src }: SpreadsheetPreviewProps) {
           </button>
         ))}
       </div>
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-4 min-h-0">
         <DataGrid
           rows={rows}
           columns={columns}

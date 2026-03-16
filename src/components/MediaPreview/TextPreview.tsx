@@ -31,7 +31,7 @@ export default function TextPreview({ content, fileType }: TextPreviewProps) {
   };
 
   return (
-    <div className="w-full h-full overflow-auto bg-gray-50 p-4">
+    <div className="w-full h-full overflow-auto bg-gray-50 p-4 min-h-0">
       {fileType === 'csv' ? (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -52,7 +52,7 @@ export default function TextPreview({ content, fileType }: TextPreviewProps) {
         <SyntaxHighlighter
           language={getLanguage()}
           style={tomorrow}
-          customStyle={{ margin: 0, borderRadius: '0.5rem' }}
+          customStyle={{ margin: 0, borderRadius: '0.5rem', minHeight: '100%' }}
           wrapLines={true}
           showLineNumbers={true}
         >

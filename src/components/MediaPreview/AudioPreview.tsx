@@ -149,7 +149,7 @@ export default function AudioPreview({ src, title }: AudioPreviewProps) {
 
   // 即使还在加载，也显示播放器
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="w-full h-full flex items-center justify-center p-4 bg-gradient-to-b from-gray-50 to-gray-100">
       <audio
         ref={audioRef}
         src={src}
@@ -160,7 +160,7 @@ export default function AudioPreview({ src, title }: AudioPreviewProps) {
 
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">{title}</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2 truncate" title={title}>{title}</h3>
           <p className="text-gray-500">
             {isLoading ? '音频加载中...' : '音频播放'}
           </p>
